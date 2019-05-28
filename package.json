@@ -1,0 +1,16 @@
+{
+  "name": "api_css",
+  "version": "1.0.0",
+  "description": "api pulling",
+  "main": "script.js",
+  "scripts": {
+    "test": "node script.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "mssql": "^5.1.0",
+    "named-placeholders": "^1.1.2",
+    "node-fetch": "^2.5.0"
+  }
+}
