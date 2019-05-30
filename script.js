@@ -31,7 +31,9 @@ const config = require ('./config');
         }
       }
       console.log("DONE");
-      process.exit();
+      setTimeout(() => {
+        process.exit();
+      }, 2000);
     })
     .catch(error => { console.error(error); }); // errors pertaining to the call to the API
 })();
