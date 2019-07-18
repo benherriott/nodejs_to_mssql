@@ -1,3 +1,12 @@
+/* 
+  API -> REVISED JSON -> SQL STORED PROCEDURE -> Stored in SQL TABLE
+  AUTHOR: Ben Herriott 
+  REVISED: 2019-07-18
+  Only compatible with SQL SERVER 2016 and higher
+  Takes in data from a Web API takes the data needed and either UPDATES/INSERTS the record on the SQL end into a table. 
+  This script is used in a scheduled task to populate a MSSQL table so that data can be used elsewheres.
+*/
+
 const fetch  = require('node-fetch');
 const sql    = require('mssql');
 const config = require ('./config');
@@ -5,8 +14,9 @@ const config = require ('./config');
   the placeholders npm it prevents sql injection but the promises used prevent that */
 
 (function() { // self invoking function
+  let arr = [];
   const pool1 = new sql.ConnectionPool(config.db).connect();
-  // collects all data from eVs forecasts respective of the subscriber
+  // collects all data for the future calendar respective of the subscriber
   const url = new URL(config.api.url);
   let params = {
     "apikey": config.api.key,
@@ -26,11 +36,21 @@ const config = require ('./config');
       for (let i = 0; i < json.data.length; i++) {
         let currEntry = json.data[i]; // not all the data from the api is needed
         if (currEntry.vessel != null && currEntry.terminal != null && currEntry.terminal['code'] === "CAHALHT") {
-          console.log(`${currEntry.vessel['name']},  ORIGINAL: ${currEntry.original_eta} ETA: ${currEntry.eesea_eta}`);
-          parseSQL(currEntry.vessel['name'], new Date(currEntry.original_eta), new Date(currEntry.eesea_eta), null, null, pool1);
+          let obj = {
+            vessel: currEntry.vessel['name'],
+            originalDate: new Date(currEntry.original_eta),
+            eeseaETA: new Date(currEntry.eesea_eta),
+            berth: null,
+            vCode: null,
+            etaType: currEntry.eesea_eta_type
+          };
+          arr.push(obj);
         }
       }
+      //console.dir(arr);
+      parseSQL(JSON.stringify(arr), pool1); // Stored procedure used which can handle complex JSON arrays
       console.log("DONE");
+      //sql.close();
       setTimeout(() => {
         process.exit();
       }, 2000);
@@ -38,15 +58,11 @@ const config = require ('./config');
     .catch(error => { console.error(error); }); // errors pertaining to the call to the API
 })();
 
-function parseSQL(v, orig, eta, b, vc, pool1) {
+function parseSQL(stringArr, pool1) {
   return pool1.then((pool) => { // makes sure that the pool is fully initialized/connected
     pool.request()
-    .input('Vessel', sql.NVarChar(100), v)
-    .input('Original', sql.DateTime, orig)
-    .input('Eta', sql.DateTime, eta)
-    .input('Berth', sql.NVARCHAR(100), b)
-    .input('Voyage_Codes', sql.NVARCHAR(50), vc)
-    .execute(config.sp, (err) => { // INSERT/UPDATE sp no need for a return only err checking
+    .input('json', sql.NVarChar(sql.MAX), stringArr)
+    .execute(config.sp2, (err) => { // INSERT/UPDATE sp no need for a return only err checking
       if (err) {
         console.log(err);
       }
