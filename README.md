@@ -1,4 +1,4 @@
-# nodejs_webapi_to_mssql
+# nodejs_to_mssql
 Retrieves data from a REST API and from there feeds the data to a MS SQL Server.
 Purpose: Provide a full example on connecting Node.js with MS SQL Server using current technologies. 
 Small script that pulls data from an api, constructs it into the desired JSON object and executes a stored procedure which 
